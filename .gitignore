@@ -1,6 +1,7 @@
 STATICS.py
 SECRETS.py
 testing.py
+/.idea/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
