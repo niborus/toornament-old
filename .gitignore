@@ -1,6 +1,9 @@
 STATICS.py
 SECRETS.py
-testing.py
+testing.test.py
+
+*.test.*
+
 /.idea/
 
 # Byte-compiled / optimized / DLL files
