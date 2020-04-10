@@ -3,8 +3,9 @@
 # 910 - Problem with the Internet-Connection
 
 import requests
-import SECRETS, shortsql
-import shortsql
+import SECRETS
+from toornament import shortsql
+
 
 # Class will prepare an request. Instance can be altered.
 class prep_request():

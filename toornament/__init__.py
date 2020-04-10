@@ -1,12 +1,12 @@
 # Abstract classes
 
-from errors import *
+from .errors import *
 
 class TestException(Exception):
     """Its a exception"""
 
-from base_classes import abc
-import request
+from .base_classes import abc
+from . import request
 
 # This is the connection to toornament, containing all tokens
 class connection():

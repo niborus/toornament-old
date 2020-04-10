@@ -1,6 +1,6 @@
 import mysql.connector
 import SECRETS, STATICS
-from scopes import scopes
+from toornament.scopes import scopes
 
 def init():
 
