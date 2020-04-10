@@ -6,53 +6,83 @@ import requests
 import SECRETS, shortsql
 import shortsql
 
-class request():
+# Class will prepare an request. Instance can be altered.
+class prep_request():
 
-    def __init__(self, token="",):
+    def __init__(self, token="", host ="https://api.toornament.com", section ="viewer", timeout = 7):
         self.token = token
-        self.method = None
-        self.url = "https://api.toornament.com"
-        self.section = "viewer"
-        self.timeout = 7
+        self.host = host
+        self.section = section
+        self.timeout = timeout
+        self.range = None
 
     def url_path(self):
         return ""
 
+    def add_head(self):
+        return {}
+
     def create_url(self):
-        url = self.url
 
-        url+= "/viewer/v2"
+        url_var = {
+            "host": self.host,
+            "section": self.section,
+            "path": self.url_path()
+        }
 
-        url+= self.url_path()
+        url = "{host}/{section}/v2{path}".format(**url_var)
 
         return url
 
     def execute(self):
-
         request_head = {
             "X-Api-Key": self.token,
         }
-        print(self.token)
+
+        request_head.update(self.add_head())
 
         request_query = {}
 
         data = {}
 
         request = requests.get(self.create_url(), headers=request_head, params=request_query,
-                                                       json=data, timeout=7)
+                               json=data, timeout=7)
 
         return request
 
-class prepare_tournament(request):
+class prepare_tournaments(prep_request):
 
-    def __init__(self, id = None, **kwargs):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+        self.range = {
+            "name": "tournaments",
+            "start": 0,
+            "end": 0
+        }
+
+    def url_path(self):
+        return "/tournaments/featured"
+
+    def range_string(self):
+        return "{name}={start}-{end}".format(**self.range)
+
+    def add_head(self):
+        return {"Range": self.range_string()}
+
+
+class prepare_tournament(prep_request):
+
+    def __init__(self, id=None, **kwargs):
         super().__init__(**kwargs)
         self.id = id
 
     def url_path(self):
-        return "/tournaments/{}".format(self.id) # @ToDo Die requests noch Testen
+        return "/tournaments/{}".format(self.id)  # @ToDo Die requests noch Testen
 
-def get(type_of_request, tournament_id, scope=None, path="", sub_id=None, range_from=0, range_until=49, data=None, request_query=None): #type_of_request can be 'single', 'list', 'post' or 'patch'
+
+def get(type_of_request, tournament_id, scope=None, path="", sub_id=None, range_from=0, range_until=49, data=None,
+        request_query=None):  # type_of_request can be 'single', 'list', 'post' or 'patch'
 
     if data is None:
         data = {}
@@ -80,7 +110,7 @@ def get(type_of_request, tournament_id, scope=None, path="", sub_id=None, range_
             request_head["Authorization"] = "Bearer " + auth_token
             api_link = "organizer"
         else:
-            return {"error" : True, "errortype" : "code", "responsecode" : 901}
+            return {"error": True, "errortype": "code", "responsecode": 901}
 
     else:
         api_link = "viewer"
@@ -102,24 +132,25 @@ def get(type_of_request, tournament_id, scope=None, path="", sub_id=None, range_
             "delete": requests.delete
         }
 
-        request = list_of_request.get(type_of_request)(requested_url, headers=request_head, params=request_query, json = data ,timeout=7)
+        request = list_of_request.get(type_of_request)(requested_url, headers=request_head, params=request_query,
+                                                       json=data, timeout=7)
 
     except Exception as err:
         print("Fehler in der API (get): " + str(err))
-        return {"error" : True, "errortype" : "code", "responsecode" : 910}
+        return {"error": True, "errortype": "code", "responsecode": 910}
 
     if request.status_code < 400 and type_of_request == "delete":
         return {"error": False, "responsecode": request.status_code}
     elif request.status_code < 400:
-        return {"error" : False, "data" : request.json(), "responsecode" : request.status_code, "head": request.headers}
+        return {"error": False, "data": request.json(), "responsecode": request.status_code, "head": request.headers}
     else:
-        print(str(request.status_code)+"Fehler beim Abrufen der URL (api.get):" + str(request.url))
+        print(str(request.status_code) + "Fehler beim Abrufen der URL (api.get):" + str(request.url))
         if request.status_code == 400:
             print(request.text)
-        return {"error" : True, "errortype" : "code", "responsecode" : request.status_code, "response": request.text}
+        return {"error": True, "errortype": "code", "responsecode": request.status_code, "response": request.text}
 
 
-def getall(tournament_id, scope = None, path = ""):
+def getall(tournament_id, scope=None, path=""):
     try:
         api_data = get("list", tournament_id, scope, path=path, range_from=0, range_until=0)
         Range = int(api_data.get("head", {}).get("Content-Range", "0-0/0").split("/")[1])
@@ -130,7 +161,7 @@ def getall(tournament_id, scope = None, path = ""):
             range_from = 50 * count
             range_until = 50 * count + 49
             api_data = get("list", tournament_id, scope, path=path, range_from=range_from,
-                                       range_until=range_until)
+                           range_until=range_until)
 
             if api_data.get("error", True):
                 return api_data
@@ -138,7 +169,7 @@ def getall(tournament_id, scope = None, path = ""):
             all_participant.extend(api_data.get("data", []))
             count += 1
 
-        return {"error" : False, "data" : all_participant}
+        return {"error": False, "data": all_participant}
 
     except Exception as err:
         print(err)
@@ -154,6 +185,7 @@ def getnextmatches(toornament_id, participant_id, organizer=False):
         scope = "organizer:result"
     else:
         scope = None
-    api_return = get("list", toornament_id, scope=scope, path="matches", range_from=0, range_until=0, request_query=query)
+    api_return = get("list", toornament_id, scope=scope, path="matches", range_from=0, range_until=0,
+                     request_query=query)
 
     return api_return
