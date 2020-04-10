@@ -9,7 +9,7 @@ import shortsql
 class request():
 
     def __init__(self, token="",):
-        self.token = ""
+        self.token = token
         self.method = None
         self.url = "https://api.toornament.com"
         self.section = "viewer"
@@ -25,11 +25,14 @@ class request():
 
         url+= self.url_path()
 
+        return url
+
     def execute(self):
 
         request_head = {
             "X-Api-Key": self.token,
         }
+        print(self.token)
 
         request_query = {}
 
@@ -38,6 +41,8 @@ class request():
         request = requests.get(self.create_url(), headers=request_head, params=request_query,
                                                        json=data, timeout=7)
 
+        return request
+
 class prepare_tournament(request):
 
     def __init__(self, id = None, **kwargs):
@@ -45,7 +50,7 @@ class prepare_tournament(request):
         self.id = id
 
     def url_path(self):
-        return "/tournaments/{}".format(id) # @ToDo Die requests noch Testen
+        return "/tournaments/{}".format(self.id) # @ToDo Die requests noch Testen
 
 def get(type_of_request, tournament_id, scope=None, path="", sub_id=None, range_from=0, range_until=49, data=None, request_query=None): #type_of_request can be 'single', 'list', 'post' or 'patch'
 
