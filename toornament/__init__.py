@@ -19,7 +19,7 @@ class connection():
 
     def getTournament(self, tournament_id: int):
 
-        r = request.prepare_tournament(token=self.token, id=tournament_id)
+        r = request.prepare.tournament(token=self.token, id=tournament_id)
 
         r = r.execute()
 
@@ -33,7 +33,7 @@ class connection():
     def test_connection(self):
         """:raises LoginError if login fails"""
 
-        r = request.prepare_tournaments(token=self.token, section="viewer")
+        r = request.prepare.featured_tournaments(token=self.token, section="viewer")
         r = r.execute()
 
         if r.status_code >= 300:

@@ -4,84 +4,116 @@
 
 import requests
 import SECRETS
-from toornament import shortsql
+from . import shortsql
+
+class crange():
+    def __init__(self, name: str, start=0, end=0):
+        self.name = name
+        self.start = start
+        self.end = end
+
+    def __call__(self, *args, **kwargs):
+        return "{}={}-{}".format(self.name, self.start, self.end)
+
+class prepare:
+
+    # Class will prepare an request. Instance can be altered.
+    # This is a first level parent class
+    class basic_request():
+
+        def __init__(self, token="", host="https://api.toornament.com", section="viewer", timeout=7):
+            super().__init__()
+            self.token = token
+            self.host = host
+            self.section = section
+            self.timeout = timeout
+            self.range = None
+            self.path_formatter = {}
+
+        def url_path(self):
+            return ""
+
+        def add_head(self):
+            return {}
+
+        def create_url(self):
+            url_var = {
+                "host": self.host,
+                "section": self.section,
+                "path": self.url_path().format(**self.path_formatter)
+            }
+
+            url = "{host}/{section}/v2{path}".format(**url_var)
+
+            return url
+
+        def execute(self):
+            request_head = {
+                "X-Api-Key": self.token,
+            }
+
+            request_head.update(self.add_head())
+
+            request_query = {}
+
+            data = {}
+
+            request = requests.get(self.create_url(), headers=request_head, params=request_query,
+                                   json=data, timeout=7)
+
+            return request
+
+    # Second level parent class for multible toornaments
+    class multible_tournaments(basic_request):
+
+        def __init__(self, start=0, end=0, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.range = crange("tournaments", start=start, end=end)
+
+        def add_head(self):
+            return {"Range": self.range()}
+
+    # Callable Class
+    class featured_tournaments(multible_tournaments):
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+
+        def url_path(self):
+            return "/tournaments/featured"
+
+    # Callable Class
+    class playlist(basic_request):
+
+        def __init__(self, pl_id=0, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.path_formatter.update({"pl_id": pl_id})
+
+        def url_path(self):
+            return "/playlists/{pl_id}"
+
+    # Callable Class
+    class playlist_tournaments(multible_tournaments, playlist):
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+
+        def url_path(self):
+            return "/playlists/{pl_id}/tournaments"
+
+    # Callable Class
+    class tournament(basic_request):
+        def __init__(self, tournament_id=0, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.path_formatter.update({"tournament_id": tournament_id})
+
+        def url_path(self):
+            return "/tournaments/{tournament_id}"
 
 
-# Class will prepare an request. Instance can be altered.
-class prep_request():
-
-    def __init__(self, token="", host ="https://api.toornament.com", section ="viewer", timeout = 7):
-        self.token = token
-        self.host = host
-        self.section = section
-        self.timeout = timeout
-        self.range = None
-
-    def url_path(self):
-        return ""
-
-    def add_head(self):
-        return {}
-
-    def create_url(self):
-
-        url_var = {
-            "host": self.host,
-            "section": self.section,
-            "path": self.url_path()
-        }
-
-        url = "{host}/{section}/v2{path}".format(**url_var)
-
-        return url
-
-    def execute(self):
-        request_head = {
-            "X-Api-Key": self.token,
-        }
-
-        request_head.update(self.add_head())
-
-        request_query = {}
-
-        data = {}
-
-        request = requests.get(self.create_url(), headers=request_head, params=request_query,
-                               json=data, timeout=7)
-
-        return request
-
-class prepare_tournaments(prep_request):
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-        self.range = {
-            "name": "tournaments",
-            "start": 0,
-            "end": 0
-        }
-
-    def url_path(self):
-        return "/tournaments/featured"
-
-    def range_string(self):
-        return "{name}={start}-{end}".format(**self.range)
-
-    def add_head(self):
-        return {"Range": self.range_string()}
-
-
-class prepare_tournament(prep_request):
-
-    def __init__(self, id=None, **kwargs):
-        super().__init__(**kwargs)
-        self.id = id
-
-    def url_path(self):
-        return "/tournaments/{}".format(self.id)  # @ToDo Die requests noch Testen
-
-
+#############
+#  Old Code-Snippets. They have no function. Just ignore them.
+#############
 def get(type_of_request, tournament_id, scope=None, path="", sub_id=None, range_from=0, range_until=49, data=None,
         request_query=None):  # type_of_request can be 'single', 'list', 'post' or 'patch'
 
