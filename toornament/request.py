@@ -6,6 +6,7 @@ import requests
 import SECRETS
 from . import shortsql
 
+
 class crange():
     def __init__(self, name: str, start=0, end=0):
         self.name = name
@@ -15,57 +16,87 @@ class crange():
     def __call__(self, *args, **kwargs):
         return "{}={}-{}".format(self.name, self.start, self.end)
 
-class prepare:
 
-    # Class will prepare an request. Instance can be altered.
-    # This is a first level parent class
-    class basic_request():
+# Class will prepare an request. Instance can be altered.
+# This is a first level parent class
+class basic_request():
 
-        def __init__(self, token="", host="https://api.toornament.com", section="viewer", timeout=7):
-            super().__init__()
-            self.token = token
-            self.host = host
-            self.section = section
-            self.timeout = timeout
-            self.range = None
-            self.path_formatter = {}
+    def __init__(self, token="", host="https://api.toornament.com", section="viewer", timeout=7):
+        super().__init__()
+        self.token = token
+        self.host = host
+        self.section = section
+        self.timeout = timeout
+        self.range = None
+        self.path_formatter = {}
+
+    def url_path(self):
+        return ""
+
+    def add_head(self):
+        return {}
+
+    def create_url(self):
+        url_var = {
+            "host": self.host,
+            "section": self.section,
+            "path": self.url_path().format(**self.path_formatter)
+        }
+
+        url = "{host}/{section}/v2{path}".format(**url_var)
+
+        return url
+
+    def execute(self):
+        request_head = {
+            "X-Api-Key": self.token,
+        }
+
+        request_head.update(self.add_head())
+
+        request_query = {}
+
+        data = {}
+
+        request = requests.get(self.create_url(), headers=request_head, params=request_query,
+                               json=data, timeout=7)
+
+        return request
+
+    #@Todo Adding a authorized request (You still have to decide if you want to make a new class or enhance the old one)
+
+
+class playlists:
+
+    # Callable Class
+    class playlist(basic_request):
+        def __init__(self, pl_id=0, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.path_formatter.update({"pl_id": pl_id})
 
         def url_path(self):
-            return ""
+            return "/playlists/{pl_id}"
 
-        def add_head(self):
-            return {}
 
-        def create_url(self):
-            url_var = {
-                "host": self.host,
-                "section": self.section,
-                "path": self.url_path().format(**self.path_formatter)
-            }
+class tournaments():
+    # Callable Class
+    #@Todo Making a Class "new" for posting a tournament
 
-            url = "{host}/{section}/v2{path}".format(**url_var)
+    # Callable Class
+    class tournament(basic_request):
+        """This is help text"""
+        def __init__(self, tournament_id=0, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.path_formatter.update({"tournament_id": tournament_id})
 
-            return url
+        def url_path(self):
+            return "/tournaments/{tournament_id}"
 
-        def execute(self):
-            request_head = {
-                "X-Api-Key": self.token,
-            }
-
-            request_head.update(self.add_head())
-
-            request_query = {}
-
-            data = {}
-
-            request = requests.get(self.create_url(), headers=request_head, params=request_query,
-                                   json=data, timeout=7)
-
-            return request
+        #@Todo Making a Function patch/delete for patching, deleting Toornament
+        #@Todo Find a way to turn a Basic Request to an authenticated request.
 
     # Second level parent class for multible toornaments
-    class multible_tournaments(basic_request):
-
+    class _range(basic_request):
         def __init__(self, start=0, end=0, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.range = crange("tournaments", start=start, end=end)
@@ -74,46 +105,28 @@ class prepare:
             return {"Range": self.range()}
 
     # Callable Class
-    class featured_tournaments(multible_tournaments):
-
+    class featured(_range):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
 
         def url_path(self):
             return "/tournaments/featured"
 
-    # Callable Class
-    class playlist(basic_request):
-
-        def __init__(self, pl_id=0, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.path_formatter.update({"pl_id": pl_id})
-
-        def url_path(self):
-            return "/playlists/{pl_id}"
 
     # Callable Class
-    class playlist_tournaments(multible_tournaments, playlist):
-
+    class playlist(_range, playlists.playlist):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
 
         def url_path(self):
             return "/playlists/{pl_id}/tournaments"
 
-    # Callable Class
-    class tournament(basic_request):
-        def __init__(self, tournament_id=0, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.path_formatter.update({"tournament_id": tournament_id})
-
-        def url_path(self):
-            return "/tournaments/{tournament_id}"
-
 
 #############
 #  Old Code-Snippets. They have no function. Just ignore them.
 #############
+"""
+
 def get(type_of_request, tournament_id, scope=None, path="", sub_id=None, range_from=0, range_until=49, data=None,
         request_query=None):  # type_of_request can be 'single', 'list', 'post' or 'patch'
 
@@ -222,3 +235,5 @@ def getnextmatches(toornament_id, participant_id, organizer=False):
                      request_query=query)
 
     return api_return
+
+"""

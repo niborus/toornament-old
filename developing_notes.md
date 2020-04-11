@@ -11,6 +11,8 @@ Example:
 
 Real:
 
+- Playlist
+- Tournaments @Playlist
 - Custom Field @Tournament
 - Disciplines
 - Groups @Tournament
@@ -18,12 +20,11 @@ Real:
 - Match games @Tournament @Matches
 - Match reports @Tournament @Matches
 - Participants @Tournament
+- Stages @Tournament
 - Rankings @Tournament @Stage
 - Registrations @Tournament
 - Rounds @Tournament
-- Stages @Tournament
-- Streams @Tournament @Match
-- Tournaments
+- Streams @Tournament @Matches
 - Permission @Tournament
 - Webhook
 - Webhook Subscription @Webhook
